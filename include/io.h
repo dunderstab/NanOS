@@ -53,7 +53,7 @@ static inline void outl(uint16_t port, uint32_t data)
     asm volatile("outl %0, %w1" : : "a"(data), "Nd"(port));
 }
 
-void io_wait(void) {
+static inline void io_wait(void) {
     /* Port 0x80 is used for 'checkpoints' during POST. */
     /* The Linux kernel seems to think it is free for use :-/ */
     __asm__ __volatile__("outb %%al, $0x80" : : "a"(0));
@@ -61,7 +61,7 @@ void io_wait(void) {
 }
 
 // INIT PICs
-void init_pic()
+static inline void init_pic()
 {
     // Save the masks for later
     uint8_t mask_master = inb(PIC1_DATA);

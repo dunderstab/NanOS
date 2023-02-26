@@ -24,6 +24,16 @@ void print_char(char c) {
     } else if (c == '\n') {
         x = 0;
         y++;
+    } else if (c == '\b') {
+
+        if (x == 0)
+        {   
+            y--;
+            x = 80;
+        } else {
+            x--;   
+        }
+        video_memory[(y * 80) + x] = 0;
     } else if (c >= ' ') {
         video_memory[(y * 80) + x] = c | attribute;
         x++;
@@ -87,6 +97,9 @@ void nanos_printf(char* format, ...) {
             } else if (format[i] == 'd') {
                 int num = va_arg(args, int);
                 print_int(num);
+            } else if (format[i] == 'c') {
+                char c = va_arg(args, char);
+                print_char(c);
             } else {
                 print_char('%');
                 print_char(format[i]);

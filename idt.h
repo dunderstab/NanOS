@@ -34,7 +34,8 @@ extern void irq_handler();
 extern void irq_handler_next();
 
 // Define an ISR handler function
-void isr_handler();
+extern void isr_handler();
+extern void irq_handler_next();
 
 // Define a function to load the IDT
 void idt_load();
