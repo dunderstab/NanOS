@@ -7,10 +7,17 @@
 // Library Componenets
 #include "lib/stdio.h"
 
+// Include Components
+#include "include/io.h"
+
 // Necessary Kernel Components
 #include "gdt.h"
 #include "idt.h"
 #include "keyboard.h"
+
+// Memory Management Components
+#include "kheap.h"
+#include "paging.h"
 
 /* Check if the compiler thinks you are targeting the wrong operating system. */
 #if defined(__linux__)
@@ -31,24 +38,25 @@
 void kernel_main(void) 
 {	
 	clear_screen();
-	nanos_printf("Hello NanOS!\n");
-	gdt_init();
-	nanos_printf("Initialized Global Descriptor Table.\n");
-	idt_init();
-	nanos_printf("Initialized Interrupt Descriptor Table.\n");
-	for (int i = 0; i < 256; i++) {
-		keyboard_buffer[i] = 0;
-	}
-	nanos_printf("Initialized Keyboard.\n");
 
-	__asm__ __volatile__("sti");
-	keyboard_buffer[0] = 0;
-	nanos_printf("Welcome to NanOS!");
-	while (true) {
-		unsigned char c = read_stdin();
-		if (c != 0) {
-			char s[2] = {c};
-			nanos_printf(s);
-		}
-	}
+	// Initialise all the ISRs and segmentation
+	gdt_init();
+	idt_init();
+
+	
+	nanos_printf("Hello, paging world!\n");
+	uint32_t a = kmalloc(8);
+	initialize_paging();
+	uint32_t b = kmalloc(8);
+	uint32_t c = kmalloc(8);
+	nanos_printf("a: %h, b: %h\n", a, b);
+	nanos_printf("c: %h", c);
+
+	kfree(c);
+	kfree(b);
+	uint32_t d = kmalloc(12);
+	nanos_printf(", d: %h\n", d);
+
+	for (;;);
+	
 }

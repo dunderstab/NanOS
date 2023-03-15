@@ -1,8 +1,10 @@
 #include "keyboard.h"
 #include "include/io.h"
 #include "lib/stdio.h"
+#include "idt.h"
 
 #include <stdint.h>
+
 
 // The keyboard controller's IO port addresses
 #define KEYBOARD_DATA_PORT 0x60
@@ -14,58 +16,34 @@
 #define COMMAND_WRITE_MODE 0x60
 #define MODE_INTERRUPT_ENABLED 0x01
 
+#define SHIFT_OFFSET 0x80
+
 static unsigned int keyboard_buffer_index = 0;
+
+extern isr_t interrupt_handlers[256];
 
 void initialize_keyboard() {
     nanos_printf("Loading keyboard...\n");
-    // Disable interrupts
-    __asm__("cli");
-    nanos_printf("Loading keyboard...\n");
-
-    // Read the current keyboard mode
-    uint8_t current_mode;
-    do {
-        // Wait for the input buffer to be empty
-        while ((inb(KEYBOARD_STATUS_PORT) & 0x01) == 0);
-
-        // Send the read mode command
-        outb(KEYBOARD_COMMAND_PORT, COMMAND_READ_MODE);
-
-        // Wait for the output buffer to be full
-        while ((inb(KEYBOARD_STATUS_PORT) & 0x01) == 0);
-
-        // Read the current mode
-        current_mode = inb(KEYBOARD_DATA_PORT);
-    } while (current_mode == 0);
-    nanos_printf("Loading keyboard...\n");
-    // Enable interrupts in the mode
-    current_mode |= MODE_INTERRUPT_ENABLED;
-
-    // Write the new keyboard mode
-    do {
-        // Wait for the input buffer to be empty
-        while ((inb(KEYBOARD_STATUS_PORT) & 0x02) != 0);
-
-        // Send the write mode command
-        outb(KEYBOARD_COMMAND_PORT, COMMAND_WRITE_MODE);
-
-        // Wait for the input buffer to be empty
-        while ((inb(KEYBOARD_STATUS_PORT) & 0x02) != 0);
-
-        // Write the new mode
-        outb(KEYBOARD_DATA_PORT, current_mode);
-    } while (inb(KEYBOARD_DATA_PORT) != 0xFA);
+    interrupt_handlers[33] = keyboard_interrupt_handler;
     nanos_printf("Loading keyboard...\n");
 
     return;
 }
 
-void keyboard_interrupt_handler(unsigned char scancode) {
-    unsigned char x = scancode_to_ascii(scancode);
+void keyboard_interrupt_handler(void) {
+    unsigned char s = inb(0x64);
+    if (!(s & 1)) {
+        return;
+    }
+    unsigned char x = inb(0x60);
+    if (x == 159) {
+        return;
+    }
+    unsigned char j = scancode_to_ascii(x);
+    keyboard_buffer[keyboard_buffer_index] = j;
 
-    keyboard_buffer[keyboard_buffer_index] = x;
-    
     keyboard_buffer_index++;
+    
 }
 
 unsigned char read_stdin() {
@@ -136,6 +114,11 @@ unsigned char scancode_to_ascii(unsigned char scancode) {
         case 0x37: return '*';
         case 0x38: return 0; // Left Alt
         case 0x39: return ' ';
+        case 0x2A + SHIFT_OFFSET:  return 0; // Right Shift (shifted)
+        case 0x27 + SHIFT_OFFSET:  return ':';
+        case 0x28 + SHIFT_OFFSET:  return '"';
+        case 0x29 + SHIFT_OFFSET:  return '~';
+        case 0x2B + SHIFT_OFFSET:  return '|';
         default: return 0; // Unknown scancode
     }
 }

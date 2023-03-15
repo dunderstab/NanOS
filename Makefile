@@ -3,9 +3,9 @@
 all: run clean
 
 run: nanos.bin
-	qemu-system-i386 -kernel nanos.bin
+	qemu-system-i386 -d int -no-shutdown -no-reboot -kernel nanos.bin
 
-nanos.bin: boot.o kernel.o math.o stdio.o gdt.o idt.o idt_handler.o keyboard.o
+nanos.bin: boot.o kernel.o math.o stdio.o gdt.o idt.o idt_handler.o keyboard.o kheap.o paging.o stdlib.o ordered_array.o
 	i686-elf-gcc -T linker.ld -o $@ -ffreestanding -O2 -nostdlib $^ -lgcc
 
 %.o: %.c

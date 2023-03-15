@@ -84,8 +84,10 @@ void print_int(int num) {
         }
     }
 }
+
+
 void nanos_printf(char* format, ...) {
-    va_list args;
+    va_list args; 
     va_start(args, format);
     int i = 0;
     while (format[i]) {
@@ -97,9 +99,9 @@ void nanos_printf(char* format, ...) {
             } else if (format[i] == 'd') {
                 int num = va_arg(args, int);
                 print_int(num);
-            } else if (format[i] == 'c') {
-                char c = va_arg(args, char);
-                print_char(c);
+            } else if (format[i] == 'h') {
+                unsigned int num = va_arg(args, unsigned int);
+                print_hex(num);
             } else {
                 print_char('%');
                 print_char(format[i]);
@@ -112,4 +114,48 @@ void nanos_printf(char* format, ...) {
         i++;
     }
     va_end(args);
+}
+
+void print_hex(unsigned int num) {
+    char buffer[9];
+    int i = 0;
+    for (; i < 8; i++) {
+        int nibble = (num >> (4 * (7 - i))) & 0xf;
+        if (nibble < 0xa) {
+            buffer[i] = nibble + '0';
+        } else {
+            buffer[i] = nibble - 0xa + 'a';
+        }
+    }
+    buffer[8] = '\0';
+    print_string(buffer);
+}
+
+extern void panic(const char *message, const char *file, uint32_t line)
+{
+    // We encountered a massive problem and have to stop.
+    asm volatile("cli"); // Disable interrupts.
+
+    nanos_printf("PANIC(");
+    nanos_printf(message);
+    nanos_printf(") at ");
+    nanos_printf(file);
+    nanos_printf(":%d\n", line);
+
+    // Halt by going into an infinite loop.
+    for(;;);
+}
+
+extern void panic_assert(const char *file, uint32_t line, const char *desc)
+{
+    // An assertion failed, and we have to panic.
+    asm volatile("cli"); // Disable interrupts.
+
+    nanos_printf("ASSERTION-FAILED(");
+    nanos_printf(desc);
+    nanos_printf(") at ");
+    nanos_printf(file);
+    nanos_printf(":%d\n", line);
+    // Halt by going into an infinite loop.
+    for(;;);
 }

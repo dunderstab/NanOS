@@ -6,6 +6,13 @@
 // Number of entries in the IDT
 #define IDT_ENTRIES 256
 
+typedef struct registers {
+    uint32_t ds;                                     // Data segment selector
+    uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;  // Pushed by pusha
+    uint32_t int_no, err_code;                       // Interrupt number and error code (if applicable)
+    uint32_t eip, cs, eflags, useresp, ss;           // Pushed by the processor automatically
+} registers_t;
+
 // Struct for IDT entry
 struct idt_entry_t {
     uint16_t base_lo;  // Lower 16 bits of handler function address
@@ -28,6 +35,9 @@ struct idt_ptr_t {
 #define IDT_INT_GATE 0x0E
 #define IDT_TRAP_GATE 0x0F
 #define IDT_SIZE 0x08
+
+typedef void (*isr_t)(registers_t);
+void register_interrupt_handler(uint8_t n, isr_t handler);
 
 // Define an IRQ handler function
 extern void irq_handler();
